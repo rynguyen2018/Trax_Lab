@@ -96,34 +96,43 @@ def main():
 	#transpose data 
 	data= map(list, zip(*data))
 
-
+	#find entropy
 	entropy={}
 	for col in range(0, len(data[0])):
 		entropy[col]= findEntropy(findProb(column(data,col)))
-	#print entropy
-	#for val in entropy:
-	#	print val 
-	#	raw_input("Bing")
 	print "Entropy values found!"
 	vals= []
 	for key, value in entropy.iteritems(): 
 		vals.append((key,value))
 	
 	vals= sorted(vals,  key=itemgetter(1))
+	print vals[0:50]
+	sys.exit()
 
-	#for key,value in heapq.nsmallest(10, entropy.items(), key=itemgetter(1)):
-	#	print key,value
-
-
+	#find pairwise column prob
 	ij_prob= pairColumnProb(data)
-	#print type(ij_prob)
+
 	ij_entropy={}
 	for pair, value in ij_prob.iteritems(): 
 		ij_entropy[pair]= findEntropy(value)
 
+	#get mutual information	
 	mutual_information= mutInfo(data, entropy, ij_entropy)
-	print "Mutual Information: "
-	for key,value in heapq.nlargest(200, mutual_information.items(), key=itemgetter(1)):
+	# print "Mutual Information: "
+	# for key,value in heapq.nlargest(200, mutual_information.items(), key=itemgetter(1)):
+	# 	print key
+	#filter mutual information based on RNA seq up/down regulation 
+
+
+   	big_regulation_list=[]
+	for col in range(0, len(data[0])):
+		temp_col=column(data,col)
+		average=abs(sum(list(map(float, temp_col)))/len(temp_col))
+		if average> 1.5: 
+			big_regulation_list.append(col)
+	new_mut_info= {k:v for k,v in mutual_information.iteritems() if int(k.split(",")[0]) in big_regulation_list or int(k.split(",")[1])}
+			
+	for key,value in heapq.nlargest(200, new_mut_info.items(), key=itemgetter(1)):
 		print key
 if __name__ == '__main__':
 	main()
