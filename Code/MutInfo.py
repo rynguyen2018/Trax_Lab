@@ -40,7 +40,7 @@ def pairColumnProb(matrix):
 	for x in range(0, len(matrix[0])): 
 		col1= [str(col[x]) for col in matrix] 
 		for y in range(x+1, len(matrix[0])): 
-			col2= [str(col2[x]) for col2 in matrix]
+			col2= [str(col2[y]) for col2 in matrix]
 			seq= map("".join,zip(col1,col2)) 
 			col_cat= str(x)+","+str(y)
 			seqList[col_cat]= seq
@@ -68,7 +68,7 @@ def mutInfo(matrix, entropy_list, ij_entropy):
 	for i in range(0, len(matrix[0])): 
 		h_i= entropy_list[i]  
 		for j in range(i+1, len(matrix[0])): 
-			ij= str(x)+","+str(y)	
+			ij= str(i)+","+str(j)	
 			h_j= entropy_list[j]
 			h_ij= ij_entropy[ij]
 			mut_info[ij]= h_i+ h_j - h_ij
@@ -104,6 +104,7 @@ def main():
 	#for val in entropy:
 	#	print val 
 	#	raw_input("Bing")
+	print "Entropy values found!"
 	vals= []
 	for key, value in entropy.iteritems(): 
 		vals.append((key,value))
@@ -115,13 +116,14 @@ def main():
 
 
 	ij_prob= pairColumnProb(data)
+	#print type(ij_prob)
 	ij_entropy={}
 	for pair, value in ij_prob.iteritems(): 
-		ij_entropy[pair]= findEntropy[value]
+		ij_entropy[pair]= findEntropy(value)
 
-	mutual_information= mutInfo(data, entropy_list, ij_entropy)
-
-	for key,value in heapq.nlargest(50, mutual_information.items(), key=itemgetter(1)):
+	mutual_information= mutInfo(data, entropy, ij_entropy)
+	print "Mutual Information: "
+	for key,value in heapq.nlargest(200, mutual_information.items(), key=itemgetter(1)):
 		print key
 if __name__ == '__main__':
 	main()
