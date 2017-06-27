@@ -5,6 +5,9 @@ import csv
 from math import log
 import heapq
 from operator import itemgetter
+import argparse
+import matplotlib.pyplot as plt
+from collections import Counter
 
 """
 Task 1) Read in RNA seq data in csv format  
@@ -54,7 +57,10 @@ Task 3) Calculate the Shannon entropy of each column
 def findEntropy(prob_col):
 	entropy_value=0 
 	for key, value in prob_col.iteritems(): 
-		entropy_value+= (-1*prob_col[key]*log(prob_col[key],2))	
+		if value == "null": 
+			return -9999999999
+		else: 
+			entropy_value+= (-1*prob_col[key]*log(prob_col[key],2))	
 
 	return round(entropy_value,6)
 
@@ -76,21 +82,34 @@ def mutInfo(matrix, entropy_list, ij_entropy):
 
 
 def main(): 	
-	file= sys.argv[1]
+	parser = argparse.ArgumentParser(description='Process some RNAseq data.')
+	parser.add_argument('-i','--input', help= "csv file of RNA seq data")
+	parser.add_argument('-max', help= "max gene with mutual information of interest")
+	parser.add_argument('-min', help= 'min gene with mutual information of interest')
+	parser.add_argument('-a','--annotate', help= "compares high scorers of mutual information with annotated gene base")
+
+	args = parser.parse_args()
+	file= args.input
+	gene_interest_max= int(args.max) 
+	gene_interest_min= int(args.min)
+	annotation_file= args.annotate 
+
 
 	with open(file) as csvfile: 
-		reader=csv.reader(csvfile, delimiter= ",")
+		reader=csv.reader(csvfile, delimiter=",")
 		header= next(csvfile)
 		temp_data= []
 		for row in reader: 
 			row= ["0" if(value=="") else value for value in row]
 			temp_data.append(row)
-
 	#Turn data from string to numbers 
 	data= []
-	for row in temp_data: 
-		row=[round(float(i)*2)/2 for i in row]
-		data.append(row)
+	for row in temp_data:
+		if (row[x]== "null" for x in row):
+			data.append(row)
+		else: 
+			row=[round(float(i)*2)/2 for i in row]
+			data.append(row)
 	temp_data=None
 
 	#transpose data 
@@ -101,13 +120,11 @@ def main():
 	for col in range(0, len(data[0])):
 		entropy[col]= findEntropy(findProb(column(data,col)))
 	print "Entropy values found!"
-	vals= []
-	for key, value in entropy.iteritems(): 
-		vals.append((key,value))
+	# vals= []
+	# for key, value in entropy.iteritems(): 
+	# 	vals.append((key,value))
 	
-	vals= sorted(vals,  key=itemgetter(1))
-	print vals[0:50]
-	sys.exit()
+	#vals= sorted(vals,  key=itemgetter(1))
 
 	#find pairwise column prob
 	ij_prob= pairColumnProb(data)
@@ -122,17 +139,78 @@ def main():
 	# for key,value in heapq.nlargest(200, mutual_information.items(), key=itemgetter(1)):
 	# 	print key
 	#filter mutual information based on RNA seq up/down regulation 
-
-
-   	big_regulation_list=[]
-	for col in range(0, len(data[0])):
-		temp_col=column(data,col)
-		average=abs(sum(list(map(float, temp_col)))/len(temp_col))
-		if average> 1.5: 
-			big_regulation_list.append(col)
-	new_mut_info= {k:v for k,v in mutual_information.iteritems() if int(k.split(",")[0]) in big_regulation_list or int(k.split(",")[1])}
+		#find the conservons!!!! 
+	mut_info_vals=[]
+	for key, value in mutual_information.iteritems(): 
+		#print type(int(key.split(",")[0]))
+		if (int(key.split(",")[0]) >= gene_interest_min and int(key.split(",")[0])<= gene_interest_max): 
+			mut_info_vals.append((int(key.split(",")[1]), value))
+		if (int(key.split(",")[1])>= gene_interest_min and int(key.split(",")[1])<= gene_interest_max): 
+			mut_info_vals.append((int(key.split(",")[0]), value))
 			
-	for key,value in heapq.nlargest(200, new_mut_info.items(), key=itemgetter(1)):
-		print key
+	print "Mutual Information found! "
+	mut_info_vals= sorted(mut_info_vals,  key=lambda x: x[1])
+	#print mut_info_vals
+	top_scores=mut_info_vals[-100:]
+	top_genes= [int(i[0]) for i in top_scores]
+	#print len(top_genes)
+	#raw_input("Press Enter to continue")
+	# plt.hist(top_genes, bins=len(top_genes)*2)
+	# plt.title("Mutual Information Histogram for Genes of Interest")
+	# plt.xlabel("Value")
+	# plt.ylabel("Frequency")
+	# plt.show()
+
+	total_gene_list= []
+	annotation_list=[]
+	#annotate that ish bruhhhhhh
+	with open(annotation_file) as csvfile: 
+		reader=csv.reader(csvfile, delimiter= ",")
+		header= next(csvfile)
+		for row in reader:
+			total_gene_list.append(row[7])
+			annotation_list.append(row[11])
+	for gene in range(0,len(total_gene_list)):
+		temp_gene= total_gene_list[gene].strip("SCO")
+		temp_gene= temp_gene.lstrip("0") 
+		total_gene_list[gene]=int(temp_gene) 
+	result_annotation= {}
+	f = open(str(gene_interest_min) + "," + str(gene_interest_max) +"-" 'mut_annotation.txt', 'w')
+	annotation_list= (zip(total_gene_list, annotation_list))
+	#print annotation_list
+	for i in range(0,len(annotation_list)):
+		if annotation_list[i][0] in top_genes:
+			f.write(str(annotation_list[i][0]) + "\t" + str(annotation_list[i][1]) + "\n")
+	#print result_annotation
+	f.close()
+
+	print "annotation done! Now printing statistics"
+	plt.hist(top_genes, bins=len(top_genes)*2)
+	plt.title("Mutual Information Histogram for Genes of Interest")
+	plt.xlabel("Value")
+	plt.ylabel("Frequency")
+	plt.show()
+
+
+	#top_scores= sorted(top_scores, key=lambda x: x[0])
+	#d = {x:top_scores.count(x) for x in top_scores}
+	#od =sorted(d.items(), key=lambda x: x[1])
+	#print Counter(elem[0] for elem in top_scores)
+
+ #   	big_regulation_list=[]
+	# for col in range(0, len(data[0])):
+	# 	temp_col=column(data,col)
+	# 	average=abs(sum(list(map(float, temp_col)))/len(temp_col))
+	# 	if average> 1.5: 
+	# 		big_regulation_list.append(col)
+	# new_mut_info= {k:v for k,v in mutual_information.iteritems() if int(k.split(",")[0]) in big_regulation_list or int(k.split(",")[1])}
+			
+	# for key,value in heapq.nlargest(200, new_mut_info.items(), key=itemgetter(1)):
+	# 	print key
+
+	#find the conservons!!!! 
+	# for key, value in new_mut_info.iteritems(): 
+	# 	if (int(key.split(",")[0])<= 1166) or (int(key.split(",")[1])<= 1166): 
+	# 		print key 
 if __name__ == '__main__':
 	main()
