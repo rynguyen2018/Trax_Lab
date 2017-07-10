@@ -1,0 +1,91 @@
+144	hypothetical protein SCO0144
+424	hypothetical protein SCO0424
+504	DEAD/DEAH box helicase
+814	rhamnose kinase
+931	proline-rich protein
+1420	hypothetical protein SCO1420
+1421	hypothetical protein SCO1421
+1423	glycosyl transferase
+1426	hypothetical protein SCO1426
+1652	hypothetical protein SCO1652
+1873	acetyltransferase
+1876	RNA polymerase sigma factor
+1877	hypothetical protein SCO1877
+2077	hypothetical protein SCO2077
+2092	S-adenosyl-methyltransferase MraW
+2094	regulatory protein
+2095	hypothetical protein SCO2095
+2096	hypothetical protein SCO2096
+2098	methyltransferase
+2812	drug efflux protein
+2815	TetR family transcriptional regulator
+2816	hypothetical protein SCO2816
+2817	hypothetical protein SCO2817
+2818	hypothetical protein SCO2818
+2819	hypothetical protein SCO2819
+2895	integral membrane transport protein
+2899	GroES family molecular chaperone
+2952	helicase
+2955	hypothetical protein SCO2955
+2956	hypothetical protein SCO2956
+3029	L-lactate permease
+3352	DNA integrity scanning protein DisA
+3353	hypothetical protein SCO3353
+3356	ECF sigma factor
+3359	sensory histidine kinase contains hydrophobic membrane spanning regions
+3610	peptide hydrolase
+3611	hypothetical protein SCO3611
+3642	hypothetical protein SCO3642
+3646	oxidoreductase
+3984	hypothetical protein SCO3984
+3986	GntR family transcriptional regulator
+3987	hypothetical protein SCO3987
+4059	transcriptional regulator
+4068	phosphoribosylamine--glycine ligase
+4069	hypothetical protein SCO4069
+4172	hypothetical protein SCO4172
+4173	hypothetical protein SCO4173
+4174	hypothetical protein SCO4174
+4175	hypothetical protein SCO4175
+4176	hypothetical protein SCO4176
+4301	DNA-binding protein
+4304	oxidoreductase
+4305	hypothetical protein SCO4305
+4308	transcriptional regulator
+4309	hypothetical protein SCO4309
+4804	hypothetical protein SCO4804
+5039	penicillin-binding protein
+5431	nucleosidase
+5438	thioredoxin
+5464	hypothetical protein SCO5464
+5638	hypothetical protein SCO5638
+5639	hypothetical protein SCO5639
+6340	hypothetical protein SCO6340
+6342	hypothetical protein SCO6342
+6343	hypothetical protein SCO6343
+6348	hypothetical protein SCO6348
+6481	hypothetical protein SCO6481
+6482	hypothetical protein SCO6482
+6484	hypothetical protein SCO6484
+6485	hypothetical protein SCO6485
+6487	hypothetical protein SCO6487
+6489	hypothetical protein SCO6489
+6744	hypothetical protein SCO6744
+6747	hypothetical protein SCO6747
+6749	hypothetical protein SCO6749
+6859	hypothetical protein SCO6859
+6930	hypothetical protein SCO6930
+6936	hypothetical protein SCO6936
+6960	hypothetical protein SCO6960
+6961	hypothetical protein SCO6961
+6964	hypothetical protein SCO6964
+6965	hypothetical protein SCO6965
+6969	hypothetical protein SCO6969
+7253	hypothetical protein SCO7253
+7360	hypothetical protein SCO7360
+7365	hypothetical protein SCO7365
+7366	hypothetical protein SCO7366
+7368	hypothetical protein SCO7368
+7653	hypothetical protein SCO7653
+7657	hypothetical protein SCO7657
+7658	hypothetical protein SCO7658
