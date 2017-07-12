@@ -153,6 +153,7 @@ def main():
 	#print mut_info_vals
 	top_scores=mut_info_vals[-100:]
 	top_genes= [int(i[0]) for i in top_scores]
+	corresponding_genes_of_interest_list= [int(i[1]) for i in top_scores]
 	#print len(top_genes)
 	#raw_input("Press Enter to continue")
 	# plt.hist(top_genes, bins=len(top_genes)*2)
@@ -180,7 +181,7 @@ def main():
 	#print annotation_list
 	for i in range(0,len(annotation_list)):
 		if annotation_list[i][0] in top_genes:
-			f.write(str(annotation_list[i][0]) + "\t" + str(annotation_list[i][1]) + "\n")
+			f.write(str(annotation_list[i][0]) + "\t" + str(annotation_list[i][1]) +"\t"+ corresponding_genes_of_interest_list[i] + "\t"+top_scores[i] + "\n")
 	#print result_annotation
 	f.close()
 
