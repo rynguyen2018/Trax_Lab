@@ -1,0 +1,76 @@
+21	hypothetical protein SCO0021
+64	hypothetical protein SCO0064
+161	hypothetical protein SCO0161
+208	pyruvate phosphate dikinase
+272	binding-protein-dependent transport protein
+292	sugar ABC-transporter integral membrane protein, partial
+302	TetR family transcriptional regulator
+399	hypothetical protein SCO0399
+419	zinc-binding oxidoreductase
+424	hypothetical protein SCO0424
+814	rhamnose kinase
+973	hypothetical protein SCO0973
+1009	transposase
+1030	hypothetical protein SCO1030
+1069	MarR family transcriptional regulator
+1111	hypothetical protein SCO1111
+1122	regulatory protein
+1146	lipoprotein
+1212	ligase
+1228	acyltransferase
+1253	hypothetical protein SCO1253
+1285	ketoreductase
+1392	hypothetical protein SCO1392
+1394	glycosyl hydrolase
+1428	acyl-CoA dehydrogenase
+1550	small membrane protein
+1564	RNA polymerase sigma factor
+1612	aldehyde dehydrogenase
+1658	glycerol operon regulatory protein
+1663	cysteinyl-tRNA synthetase
+1723	RNA polymerase sigma factor SigK
+1731	hypothetical protein SCO1731
+1732	hypothetical protein SCO1732
+1888	dihydroxy-acid dehydratase
+1892	integral membrane efflux protein
+1989	aminopeptidase
+2037	tryptophan synthase subunit beta
+2109	thiazole synthase
+2128	hypothetical protein SCO2128, partial
+2147	anthranilate phosphoribosyltransferase
+2246	hypothetical protein SCO2246
+2279	hypothetical protein SCO2279
+2288	hypothetical protein SCO2288
+2307	two-component sensor kinase
+2320	hypothetical protein SCO2320
+2329	transcriptional regulator
+2343	acetyltransferase
+2386	hypothetical protein SCO2386
+2431	alpha-L-arabinofuranosidase
+2464	ABC transporter
+2578	hypothetical protein SCO2578
+2586	hypothetical protein SCO2586
+2604	hypothetical protein SCO2604
+2620	trigger factor
+2637	serine protease
+2655	hypothetical protein SCO2655
+2692	repetative protein
+2718	hypothetical protein SCO2718
+2768	hypothetical protein SCO2768
+2772	membrane transport protein
+2774	acyl-CoA dehydrogenase
+2781	hypothetical protein SCO2781
+2784	aceytltranferase
+2818	hypothetical protein SCO2818
+2878	hypothetical protein SCO2878
+2881	hypothetical protein SCO2881
+3032	hypothetical protein SCO3032
+3095	hypothetical protein SCO3095
+3098	hypothetical protein SCO3098
+3184	penicillin acylase, partial
+3189	hypothetical protein SCO3189
+3260	MutT-like protein
+3312	hypothetical protein SCO3312
+3328	hypothetical protein SCO3328
+3332	hypothetical protein SCO3332
+3420	aldehyde dehydrogenase
