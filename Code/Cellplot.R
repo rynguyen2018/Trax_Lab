@@ -8,6 +8,7 @@ points<- read.csv("Cell_growth_points.csv", header=TRUE)
 xs<- points$x
 ys<- points$y
 frames <- points$frame
-p<-ggplot(points, aes(x= xs, y=ys, frame= frames, cumulative = TRUE))+geom_point()
+p<-ggplot(points, aes(x= xs, y=ys, frame= frames, cumulative = TRUE))+geom_point()+theme_bw()+ theme(plot.background = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank())
+
 ani.options(interval = 0.06) #animation speed, seconds per frame
-gganimate(p)
+gganimate(p, "Cell_growth.gif")

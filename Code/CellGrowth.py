@@ -47,7 +47,7 @@ def GardenOfEden(black_list, t):
 			t-=1 
 	return black_list
 
-black_list= GardenOfEden(black_list, 5000)
+black_list= GardenOfEden(black_list, 150)
 f= open("Cell_growth_points.csv", 'w')
 f.write("x" + "," + "y" +","+ "frame" +"\n")
 count=1
