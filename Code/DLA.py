@@ -7,7 +7,7 @@ def CirclePoint(cell_list, n=100):
 	circle_list=[]
 	r_max= cell_list.radius_max
 	for i in range(0, n):
-		theta= random.uniform(0,1)
+		theta= random.uniform(0,1)*2*math.pi
 		circle_list.append([(r_max+2)*math.cos(theta), (r_max+2)*math.sin(theta)])
 
 	point_coord= random.randint(0,len(circle_list)-1) 
@@ -63,9 +63,11 @@ def getNewPoint(timevalue):
 		if addable: 
 			lst1.addPoint(temp_point.coord)
 			lst1.updateRadiusMax()
-		t+=1  
+			t+=1 
+			print t 
 	return lst1
-cells= getNewPoint(800)
+print("now getting cells")
+cells= getNewPoint(500)
 f= open("DLA_points.csv", 'w')
 f.write("x" + "," + "y" +","+ "frame" +"\n")
 count=1
