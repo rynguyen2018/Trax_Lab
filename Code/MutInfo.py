@@ -142,25 +142,25 @@ def main():
 		#find the conservons!!!! 
 	mut_info_vals=[]
 	for key, value in mutual_information.iteritems(): 
-		#print type(int(key.split(",")[0]))
-		if (int(key.split(",")[0]) >= gene_interest_min and int(key.split(",")[0])<= gene_interest_max): 
-			mut_info_vals.append((int(key.split(",")[1]), value))
-		if (int(key.split(",")[1])>= gene_interest_min and int(key.split(",")[1])<= gene_interest_max): 
-			mut_info_vals.append((int(key.split(",")[0]), value))
+		if (int(key.split(",")[0]) >= gene_interest_min and int(key.split(",")[0])<= gene_interest_max) or (int(key.split(",")[1])>= gene_interest_min and int(key.split(",")[1])<= gene_interest_max): 
+			mut_info_vals.append((key, value))
 			
 	print "Mutual Information found! "
 	mut_info_vals= sorted(mut_info_vals,  key=lambda x: x[1])
 	#print mut_info_vals
 	top_scores=mut_info_vals[-100:]
-	top_genes= [int(i[0]) for i in top_scores]
-	corresponding_genes_of_interest_list= [int(i[1]) for i in top_scores]
-	#print len(top_genes)
-	#raw_input("Press Enter to continue")
-	# plt.hist(top_genes, bins=len(top_genes)*2)
-	# plt.title("Mutual Information Histogram for Genes of Interest")
-	# plt.xlabel("Value")
-	# plt.ylabel("Frequency")
-	# plt.show()
+	top_genes=[]
+	for gene in top_scores:
+		if int(gene[0].split(",")[0])> gene_interest_max or int(gene[0].split(",")[0])< gene_interest_min:  
+			top_genes.append(int(gene[0].split(",")[0]))
+		if int(gene[0].split(",")[1])> gene_interest_max or int(gene[0].split(",")[1])< gene_interest_min:
+			top_genes.append(int(gene[0].split(",")[1]))
+	corresponding_genes_of_interest_list= []
+	for goi in top_scores:
+		if (int(goi[0].split(",")[0]) >= gene_interest_min and int(goi[0].split(",")[0])<= gene_interest_max): 
+			corresponding_genes_of_interest_list.append(int(goi[0].split(",")[0]))
+		if (int(goi[0].split(",")[1])>= gene_interest_min and int(goi[0].split(",")[1])<= gene_interest_max): 
+			corresponding_genes_of_interest_list.append(int(goi[0].split(",")[1]))
 
 	total_gene_list= []
 	annotation_list=[]
@@ -169,24 +169,26 @@ def main():
 		reader=csv.reader(csvfile, delimiter= ",")
 		header= next(csvfile)
 		for row in reader:
-			total_gene_list.append(row[7])
-			annotation_list.append(row[11])
+			total_gene_list.append(row[0])
+			annotation_list.append(row[1])
 	for gene in range(0,len(total_gene_list)):
-		temp_gene= total_gene_list[gene].strip("SCO")
-		temp_gene= temp_gene.lstrip("0") 
-		total_gene_list[gene]=int(temp_gene) 
-	result_annotation= {}
+		#temp_gene= total_gene_list[gene].strip("SCO")
+		#temp_gene= temp_gene.lstrip("0") 
+		total_gene_list[gene]=int(gene)#temp_gene) 
+
 	f = open(str(gene_interest_min) + "," + str(gene_interest_max) +"-" 'mut_annotation.txt', 'w')
-	annotation_list= (zip(total_gene_list, annotation_list))
+	#annotation_list= zip(total_gene_list, annotation_list)
+
+
 	#print annotation_list
-	for i in range(0,len(annotation_list)):
-		if annotation_list[i][0] in top_genes:
-			f.write(str(annotation_list[i][0]) + "\t" + str(annotation_list[i][1]) +"\t"+ corresponding_genes_of_interest_list[i] + "\t"+top_scores[i] + "\n")
+	for i in range(0,len(top_genes)):
+		#if top_genes[i] in total_gene_list:
+		f.write(str(top_genes[i]) + "\t" + str(annotation_list[top_genes[i]-1]) +"\t"+ str(corresponding_genes_of_interest_list[i]) + "\t"+ str(top_scores[i][1]) + "\n")
 	#print result_annotation
 	f.close()
 
 	print "annotation done! Now printing statistics"
-	plt.hist(top_genes, bins=len(top_genes)*2)
+	plt.hist(top_genes, bins=len(top_genes)*16)
 	plt.title("Mutual Information Histogram for Genes of Interest")
 	plt.xlabel("Value")
 	plt.ylabel("Frequency")
