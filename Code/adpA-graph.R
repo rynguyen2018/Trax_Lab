@@ -1,7 +1,7 @@
 library(ggplot2)
 
-
-setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
+setwd("C:/Users/Ryan/Desktop/gitcode/Trax_Lab/Code")
+#setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
 points<- read.csv("adpA-experimental.csv", header=TRUE)
 time <- points$time
 ys <- points$IMV.intensity.Mean.Value.
