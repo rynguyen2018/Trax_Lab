@@ -6,4 +6,4 @@ points<- read.csv("adpA-experimental.csv", header=TRUE)
 time <- points$time
 ys <- points$IMV.intensity.Mean.Value.
 
-ggplot(points, aes(x=time, y=ys)) +geom_point() + geom_line()
+#ggplot(points, aes(x=time, y=ys)) +geom_point() + geom_line()
