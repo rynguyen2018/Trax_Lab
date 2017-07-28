@@ -1,0 +1,7 @@
+To use canu, get to thios directory in the command line: 
+~\Darwin-amd64\bin
+
+Then, type this 
+./canu -gnuPlotTested=True 
+
+along with your other specifications in order to assemble your genome 
