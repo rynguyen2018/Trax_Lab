@@ -176,8 +176,8 @@ theta<- c(beta_AdpA= 0.989, gamma_AdpA= 0.500579864, k1_AdpA= 0.04955542, k2_Adp
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                     initTheta = theta, # intial parameter guess
-                    proposalSD = c(10^-2,            10^-5 ,                         10^-5 ,             10^-3 ,          10^-4 ,                   0.25 ,    0.25 ,                          10^-4 ,             10^-4 ,          10^-4,                 0.5,      0.3 ), # standard deviations of # parameters for Gaussian proposal distribution
-                    numIterations = 20000) # number of iterations
+                    proposalSD = c(10^-2,            10^-3 ,                         10^-5 ,             10^-3 ,          10^-4 ,                   0.25 ,    0.25 ,                          10^-3 ,             10^-3 ,          10^-4,                 0.5,      0.3 ), # standard deviations of # parameters for Gaussian proposal distribution
+                    numIterations = 10000) # number of iterations
 
 
 trace <- matrix(mcmcTrace, ncol = length(theta), byrow = T)
