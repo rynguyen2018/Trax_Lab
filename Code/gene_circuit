@@ -1,0 +1,23 @@
+#include <R.h>
+static double parms[11];
+
+#define k1 parms[0];
+#define k2 parms[1];
+#define k3 parms[2];
+#define k4 parms[3];
+#define k5 parms[4];
+#define k6 parms[5];
+#define k7 parms[6];
+#define k8 parms[7];
+#define k9 parms[8];
+#define k10 parms[9];
+#define p parms[10];
+
+void initmod(void (* odeparms)(int *, double *)){
+  int N = 11;
+  odeparms(&N, parms);
+}
+
+void derivs(int *neq, double *t, double *y, double *ydot, double *yout, double *ip){
+  ydot[0] = (k1*pow(y[0],k6)) / (pow(k3,k6) + pow(y[0],k6)) + (k2*pow(y[1],k7))/(pow(k4,k7) + pow(y[1],k7))- k5* y[0];
+  ydot[1] = (k8*pow(y[0],k10))/(pow(k9,k10) + pow(y[0],k10)) - k10* y[1];
