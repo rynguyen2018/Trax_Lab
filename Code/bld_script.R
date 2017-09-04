@@ -1,11 +1,10 @@
 library(deSolve)
 library(ggplot2)
-#setwd("C:/Users/Ryan/Desktop/gitcode/Trax_Lab/Code")
-setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
-points<- read.csv("adpA-experimental.csv", header=TRUE)
-
-adpAExpression <- points$Rounded.IMV.s
-ODEtime<- seq(from =1, to=points$time[length(points$time)], by=0.01)
+setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
+dyn.load(paste0("gene_circuit", .Platform$dynlib.ext))
+adpAExpression <- points$Concentration
+ODEtime<- seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
 coelicolor_ODE<- function(time, state, theta){
   ### Parameters
@@ -30,58 +29,54 @@ coelicolor_ODE<- function(time, state, theta){
   ###States
   AdpA <- state["AdpA"]
   BldA <- state["BldA"]
-  ### ODE's 
-
-  dAdpA<- (beta_AdpA*AdpA^n1)/(k1_AdpA^n1 + AdpA^n1) + (gamma_AdpA*BldA^n2)/(k2_AdpA^n2 + BldA^n2)- sigma_AdpA* AdpA 
-  #print(k1_AdpA^n1)
+  ### ODE's
+  
+  dAdpA<- (beta_AdpA*AdpA^n1)/(k1_AdpA^n1 + AdpA^n1) + (gamma_AdpA*BldA^n2)/(k2_AdpA^n2 + BldA^n2)- sigma_AdpA* AdpA
   dBldA <- (gamma_BldA*AdpA^p)/(k1_BldA^p + AdpA^p) - sigma_BldA* BldA
   return(list(c(dAdpA, dBldA)))
   
   
 }
 
-theta<- c(beta_AdpA= 0.989, gamma_AdpA= 0.500579864, k1_AdpA= 0.04955542, k2_AdpA= 0.02996290,  sigma_AdpA=1/120, n1=0.781525209, n2=0.88210864, gamma_BldA= 0.200629732, k1_BldA=0.03989260, sigma_BldA= 1/120,p= 5, shape_parameter= 1.052736575  )
-        
+
 logPrior <- function(theta) {
-  logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10, log = TRUE)
+  logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
   
-  logPriorgamma_AdpA <- dunif(theta[["gamma_AdpA"]], min = 1*10^-7, max = 10, log = TRUE)
-  logPriork1_AdpA <- dunif(theta[["k1_AdpA"]], min = 1*10^-5, max = 10-1, log = TRUE)
-  logPriork2_AdpA <- dunif(theta[["k2_AdpA"]], min = 1*10^-5, max = 10^-1, log = TRUE)
-  
+  logPriorgamma_AdpA <- dunif(theta[["gamma_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
+  logPriork1_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+  logPriork2_AdpA <- dnorm(log(theta[["k2_AdpA"]]), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_AdpA <- dunif(theta[["sigma_AdpA"]], min = 10^-7, max = 1, log = TRUE)
   logPriorn1 <-  dunif(theta[["n1"]], min = -20, max = 20, log = TRUE)
   logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
   
-  logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10, log = TRUE)
-  logPriork1_BldA <- dunif(theta[["k1_BldA"]], min = 1*10^-5, max = 10^-1, log = TRUE)
+  logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
+  logPriork1_BldA <- dnorm(log(theta[["k1_BldA"]]), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
   logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
-  logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0, max = 30, log = TRUE)
-  
-  return(logPriorbeta_AdpA+ logPriork1_AdpA +logPriork2_AdpA + logPriorgamma_AdpA +logPriorgamma_AdpA 
-  +logPriorsigma_AdpA+logPriorn1 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+ logpriorshape_parameter)
+  logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 100, log = TRUE)
+  logpriorscale_parameter<- dunif(theta[["scale_parameter"]], min = 0.1, max = 100, log = TRUE)
+  return(logPriorbeta_AdpA+ logPriork1_AdpA +logPriork2_AdpA + logPriorgamma_AdpA +logPriorgamma_AdpA
+         +logPriorsigma_AdpA+logPriorn1 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+ logpriorshape_parameter + logpriorscale_parameter)
 }
 
-###Likelihood function for a single data point 
+###Likelihood function for a single data point
 pointLogLike <- function(i, expressionData, expressionModel, theta){
-  #Fluorescence is observed through a  process
-  nbLike <-dnbinom(x= expressionData[i], size=theta[["shape_parameter"]],mu= expressionModel[i], log=TRUE)
-  return (nbLike)
-  
+  #Fluorescence is observed through a negative binomial process with non integer counts. Thus, you first sample from a gamma distribution and then use the result as the mean for a poisson process
+  nbLike <-dgamma(x= expressionData[i], sd=theta[["shape_parameter"]],mean = expressionModel[i], log=TRUE)
+  if(is.na(nbLike)){
+    return(0)
+  }
+  return(nbLike)
 }
 
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
   
-  trajModel <- data.frame(ode(y=initState, times=time, func=coelicolor_ODE, 
-                              parms=theta, method = "ode45"))
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta, method = "ode45" ))
   expressionModel <- trajModel$AdpA
   logLike <- 0
   for (i in 1:length(time)) {
-    if(time[i]%%1 ==0){
-      logLike <- logLike + pointLogLike(time[i], expressionData , expressionModel, theta )
-    }
+    logLike <- logLike + pointLogLike(time[i], expressionData , expressionModel, theta )
   }
   return(logLike)
 }
@@ -99,11 +94,11 @@ logPosterior <- function(time, expressionData, theta, initState) {
   return(logPosterior)
 }
 
-## Posterior function for Metropolis_Hastings algorithm (only depends on theta): 
+## Posterior function for Metropolis_Hastings algorithm (only depends on theta):
 logPosteriorMH <- function(MHparams) {
-  return(logPosterior(time= ODEtime, expressionData= adpAExpression, 
-                      theta= c(MHparams), 
-                      initState=c(AdpA= 1000,BldA= 1000 ))) 
+  return(logPosterior(time= ODEtime, expressionData= adpAExpression,
+                      theta= c(MHparams),
+                      initState=c(AdpA= 0.00001, BldA=0.000015)))
   
 }
 
@@ -115,7 +110,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
   posteriorThetaCurrent <- logPosteriorMH(initTheta)
   # Initialise variables to store the current value of theta, the
   # vector of sample values, and the number of accepted proposals.
-  thetaCurrent <- initTheta 
+  thetaCurrent <- initTheta
   samples <- initTheta
   accepted <- 0
   
@@ -129,9 +124,9 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     names(thetaProposed) <- names(thetaCurrent)
     
     # Evaluate the log) posterior function at the proposed theta
-    # value and assign to a variable called 
+    # value and assign to a variable called
     # posteriorThetaProposed.
-    posteriorThetaProposed <- logPosteriorMH(thetaProposed) 
+    posteriorThetaProposed <- logPosteriorMH(thetaProposed)
     # Compute the Metropolis-Hastings (log) acceptance
     # probability and assign to a variable called
     # logAcceptance.
@@ -140,7 +135,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     # using "runif" and assign to a variable called randNum.
     randNum <- runif(1,min=0,max=1)
     
-    # Use the random number and the acceptance probability to 
+    # Use the random number and the acceptance probability to
     # determine if thetaProposed will be accepted.
     
     if (randNum< exp(logAcceptance)) {
@@ -149,7 +144,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
       # proposed value of theta.
       thetaCurrent <- thetaProposed
       
-      # And update the current value of the posterior 
+      # And update the current value of the posterior
       # function.
       posteriorThetaCurrent <- posteriorThetaProposed
       
@@ -168,56 +163,20 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 }
 
 
-initState<- c(AdpA= 1000, BldA=1000)
+initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 0.989, gamma_AdpA= 0.500579864, k1_AdpA= 0.04955542, k2_AdpA= 0.02996290,  sigma_AdpA=1/120, n1=0.781525209, n2=0.88210864, gamma_BldA= 0.200629732, k1_BldA=0.03989260, sigma_BldA= 1/120,p= 5, shape_parameter= 1.052736575  )
+theta<- c(beta_AdpA= 100, gamma_AdpA= 100, k1_AdpA= 100, k2_AdpA= 100,  sigma_AdpA=1/120, n1=0.781525209, n2=0.88210864, gamma_BldA= 10, k1_BldA=100, sigma_BldA= 1/120,p= 5, shape_parameter= 5,scale_parameter= 7)
 
 
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                     initTheta = theta, # intial parameter guess
-                    proposalSD = c(10^-2,            10^-3 ,                         10^-5 ,             10^-3 ,          10^-4 ,                   0.25 ,    0.25 ,                          10^-3 ,             10^-3 ,          10^-4,                 0.5,      0.3 ), # standard deviations of # parameters for Gaussian proposal distribution
-                    numIterations = 10000) # number of iterations
+                    proposalSD = c(8, 8, 14, 14, 10^-4, 0.15, 0.15, 8, 14, 10^-4,0.2, 0.3, 0.2), # standard deviations of # parameters for Gaussian proposal distribution
+                    numIterations = 100000) # number of iterations
 
+trace <- matrix(mcmcTrace, ncol = 13, byrow = T)
 
-trace <- matrix(mcmcTrace, ncol = length(theta), byrow = T)
+library(coda)
 trace <- mcmc(trace)
 plot(trace)
 summary(trace)
-
-## Remove the first 2000 iterations to allow for burn-in:
-traceBurn <- trace[-(1:2000),]
-traceBurn <- mcmc(traceBurn)
-plot(traceBurn)
-summary(traceBurn)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
