@@ -1,43 +1,12 @@
 library(deSolve)
 library(ggplot2)
 setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+#setwd("/Users/Ryan/Desktop/gitcode/Trax_Lab/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
-dyn.load(paste0("gene_circuit", .Platform$dynlib.ext))
+#dyn.load("gene_circuit.dll")
+dyn.load("gene_circuit.so")
 adpAExpression <- points$Concentration
 ODEtime<- seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
-
-coelicolor_ODE<- function(time, state, theta){
-  ### Parameters
-  
-  ###AdpA
-  beta_AdpA <- theta["beta_AdpA"]
-  gamma_AdpA <- theta["gamma_AdpA"]
-  k1_AdpA <- theta["k1_AdpA"]
-  k2_AdpA <- theta["k2_AdpA"]
-  sigma_AdpA <- theta["sigma_AdpA"]
-  n1 <- theta["n1"]
-  n2 <- theta["n2"]
-  
-  
-  ###BldA
-  gamma_BldA <- theta["gamma_BldA"]
-  k1_BldA <- theta["k1_BldA"]
-  sigma_BldA <- theta["sigma_BldA"]
-  p <- theta["p"]
-  
-  
-  ###States
-  AdpA <- state["AdpA"]
-  BldA <- state["BldA"]
-  ### ODE's
-  
-  dAdpA<- (beta_AdpA*AdpA^n1)/(k1_AdpA^n1 + AdpA^n1) + (gamma_AdpA*BldA^n2)/(k2_AdpA^n2 + BldA^n2)- sigma_AdpA* AdpA
-  dBldA <- (gamma_BldA*AdpA^p)/(k1_BldA^p + AdpA^p) - sigma_BldA* BldA
-  return(list(c(dAdpA, dBldA)))
-  
-  
-}
-
 
 logPrior <- function(theta) {
   logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
@@ -54,15 +23,14 @@ logPrior <- function(theta) {
   logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
   logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
   logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 100, log = TRUE)
-  logpriorscale_parameter<- dunif(theta[["scale_parameter"]], min = 0.1, max = 100, log = TRUE)
   return(logPriorbeta_AdpA+ logPriork1_AdpA +logPriork2_AdpA + logPriorgamma_AdpA +logPriorgamma_AdpA
-         +logPriorsigma_AdpA+logPriorn1 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+ logpriorshape_parameter + logpriorscale_parameter)
+         +logPriorsigma_AdpA+logPriorn1 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+ logpriorshape_parameter)
 }
 
 ###Likelihood function for a single data point
 pointLogLike <- function(i, expressionData, expressionModel, theta){
   #Fluorescence is observed through a negative binomial process with non integer counts. Thus, you first sample from a gamma distribution and then use the result as the mean for a poisson process
-  nbLike <-dgamma(x= expressionData[i], sd=theta[["shape_parameter"]],mean = expressionModel[i], log=TRUE)
+  nbLike <-dgamma(x= expressionData[i], shape=theta[["shape_parameter"]], scale= expressionModel[i]/theta[["shape_parameter"]] ,log=TRUE)
   if(is.na(nbLike)){
     return(0)
   }
@@ -72,7 +40,7 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
   
-  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta, method = "ode45" ))
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:11], dllname= "gene_circuit", initfunc = "initmod", nout = 2 ))
   expressionModel <- trajModel$AdpA
   logLike <- 0
   for (i in 1:length(time)) {
@@ -165,8 +133,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 
 initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 100, gamma_AdpA= 100, k1_AdpA= 100, k2_AdpA= 100,  sigma_AdpA=1/120, n1=0.781525209, n2=0.88210864, gamma_BldA= 10, k1_BldA=100, sigma_BldA= 1/120,p= 5, shape_parameter= 5,scale_parameter= 7)
-
+theta<- c(beta_AdpA= 100, gamma_AdpA= 100, k1_AdpA= 100, k2_AdpA= 100,  sigma_AdpA=1/120, n1=0.781525209, n2=0.88210864, gamma_BldA= 10, k1_BldA=100, sigma_BldA= 1/120,p= 5, shape_parameter= 5)
 
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
