@@ -8,6 +8,7 @@ dyn.load("gene_circuit.so")
 adpAExpression <- points$Concentration
 ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
+#I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
   logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
   
@@ -25,8 +26,8 @@ logPrior <- function(theta) {
   logPriorsigma_AdpA_change <- dunif(theta[["sigma_adpAchange"]], min= 10^-7, max=1, log= TRUE)
   logPrior_bldA_change <- dunif(theta[["sigma_bldAchange"]], min= 10^-7, max=1, log= TRUE)
   logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 1000, log = TRUE)
-  return(logPriorbeta_AdpA+ logPriork1_AdpA +logPriork2_AdpA + logPriorgamma_AdpA +logPriorgamma_AdpA
-         +logPriorsigma_AdpA+logPriorn1 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
+  return(logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA 
+         +logPriorsigma_AdpA+logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
 }
 
 ###Likelihood function for a single data point
@@ -135,17 +136,21 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 
 initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 100, gamma_AdpA= 80, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=7*10^-5, n1=2.5, n2=2, gamma_BldA= 10, k1_BldA=100, sigma_BldA= 1/130,p= 5, sigma_adpAchange= 2*10^-4, sigma_bldAchange= 4*10^-4, shape_parameter= 32)
+theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 1/130,p= 5, sigma_adpAchange= 2*10^-4, sigma_bldAchange= 4*10^-4, shape_parameter= 32)
 
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                     initTheta = theta, # intial parameter guess
-                    proposalSD = c(4*10^-1, 4*10^-1, 5*10^-1, 5*10^-1, 10^-6, 2*10^-2, 2*10^-2, 4*10^-1, 5*10^-1, 10^-4,2*10^-3, 6*10^-4,5*10^-6,5*10^-6, 2*10^-4), # standard deviations of # parameters for Gaussian proposal distribution
-                    numIterations = 300000) # number of iterations
-
+                    proposalSD = c(4*10^-3, 4*10^-3, 5*10^-3, 5*10^-3, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-3, 5*10^-3, 10^-3,5*10^-3, 7*10^-4,5*10^-6,2*10^-6, 2*10^-5), # standard deviations of # parameters for Gaussian proposal distribution
+                    numIterations = 200000) # number of iterations
 trace <- matrix(mcmcTrace, ncol = 14, byrow = T)
 
 library(coda)
 trace <- mcmc(trace)
 plot(trace)
 summary(trace)
+
+traceBurn <- trace[-(1:100000),]
+traceBurn <- mcmc(traceBurn)
+plot(traceBurn)
+summary(traceBurn)
