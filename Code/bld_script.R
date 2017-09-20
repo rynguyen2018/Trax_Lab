@@ -16,18 +16,18 @@ logPrior <- function(theta) {
   logPriork1_AdpA <- dnorm(log(abs(theta[["k1_AdpA"]])), mean= 4.605, sd = 2.7, log = TRUE)
   logPriork2_AdpA <- dnorm(log(abs(theta[["k2_AdpA"]])), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_AdpA <- dunif(theta[["sigma_AdpA"]], min = 10^-7, max = 1, log = TRUE)
-  logPriorn1 <-  dunif(theta[["n1"]], min = -20, max = 20, log = TRUE)
-  logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
+  logPriorn1 <-  dunif(theta[["n1"]], min = 0.01, max = 10, log = TRUE)
+  logPriorn2 <- dunif(theta[["n2"]], min = 0.01, max = 10, log = TRUE)
   
   logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
   logPriork1_BldA <- dnorm(log(abs(theta[["k1_BldA"]])), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
-  logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
+  logPriorp <- dunif(theta[["p"]], min = 0.01, max = 10, log = TRUE)
   logPriorsigma_AdpA_change <- dunif(theta[["sigma_adpAchange"]], min= 10^-7, max=1, log= TRUE)
   logPrior_bldA_change <- dunif(theta[["sigma_bldAchange"]], min= 10^-7, max=1, log= TRUE)
   logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 1000, log = TRUE)
   return(logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA 
-         +logPriorsigma_AdpA+logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
+        +logPriorsigma_AdpA+logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
 }
 
 ###Likelihood function for a single data point
@@ -136,21 +136,16 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 
 initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 1/130,p= 5, sigma_adpAchange= 2*10^-4, sigma_bldAchange= 4*10^-4, shape_parameter= 32)
+theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=1.65, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 6*10^-3,p=5, sigma_adpAchange= 2*10^-2, sigma_bldAchange= 4*10^-2, shape_parameter= 32)
 
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                     initTheta = theta, # intial parameter guess
-                    proposalSD = c(4*10^-3, 4*10^-3, 5*10^-3, 5*10^-3, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-3, 5*10^-3, 10^-3,5*10^-3, 7*10^-4,5*10^-6,2*10^-6, 2*10^-5), # standard deviations of # parameters for Gaussian proposal distribution
-                    numIterations = 200000) # number of iterations
+                    proposalSD = c(5*10^-1, 10^-1, 5*10^-1, 5*10^-1, 5*10^-4, 5*10^-3, 2*10^-4, 4*10^-1, 5*10^-1, 3*10^-4,5*10^-2, 3*10^-3,5*10^-3,2*10^-3, 3*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+                    numIterations = 250000) # number of iterations
 trace <- matrix(mcmcTrace, ncol = 14, byrow = T)
 
 library(coda)
 trace <- mcmc(trace)
 plot(trace)
 summary(trace)
-
-traceBurn <- trace[-(1:100000),]
-traceBurn <- mcmc(traceBurn)
-plot(traceBurn)
-summary(traceBurn)
