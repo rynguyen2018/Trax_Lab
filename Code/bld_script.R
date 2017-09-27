@@ -4,7 +4,7 @@ setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
 #setwd("/Users/Ryan/Desktop/gitcode/Trax_Lab/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
 #dyn.load("gene_circuit.dll")
-dyn.load("gene_circuit.so")
+dyn.load("gene_circuit_updatedtest.so")
 adpAExpression <- points$Concentration
 ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
@@ -12,28 +12,26 @@ ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.000
 logPrior <- function(theta) {
   logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
   
-  logPriorgamma_AdpA <- dunif(theta[["gamma_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
   logPriork1_AdpA <- dnorm(log(abs(theta[["k1_AdpA"]])), mean= 4.605, sd = 2.7, log = TRUE)
   logPriork2_AdpA <- dnorm(log(abs(theta[["k2_AdpA"]])), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_AdpA <- dunif(theta[["sigma_AdpA"]], min = 10^-7, max = 1, log = TRUE)
-  logPriorn1 <-  dunif(theta[["n1"]], min = 0.01, max = 10, log = TRUE)
-  logPriorn2 <- dunif(theta[["n2"]], min = 0.01, max = 10, log = TRUE)
   
   logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
   logPriork1_BldA <- dnorm(log(abs(theta[["k1_BldA"]])), mean = 4.605, sd = 2.7, log = TRUE)
   logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
-  logPriorp <- dunif(theta[["p"]], min = 0.01, max = 10, log = TRUE)
+  logPriorp <- dunif(theta[["p"]], min = 0.01, max = 100, log = TRUE)
   logPriorsigma_AdpA_change <- dunif(theta[["sigma_adpAchange"]], min= 10^-7, max=1, log= TRUE)
   logPrior_bldA_change <- dunif(theta[["sigma_bldAchange"]], min= 10^-7, max=1, log= TRUE)
-  logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 1000, log = TRUE)
-  return(logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA 
-        +logPriorsigma_AdpA+logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
+
+  return(logPriorbeta_AdpA+ logPriork1_AdpA +logPriork2_AdpA 
+         +logPriorsigma_AdpA+ logPriorgamma_BldA+logPriork1_BldA 
+         +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change)
 }
 
 ###Likelihood function for a single data point
 pointLogLike <- function(i, expressionData, expressionModel, theta){
   #Fluorescence is observed through a negative binomial process with non integer counts. Thus, you first sample from a gamma distribution and then use the result as the mean for a poisson process
-  nbLike <-dgamma(x= expressionData[i], shape=theta[["shape_parameter"]], scale= expressionModel[i]/theta[["shape_parameter"]] ,log=TRUE)
+  nbLike <-dgamma(x= expressionData[i], shape=32, scale= expressionModel[i]/32 ,log=TRUE)
   if(is.na(nbLike)){
     return(0)
   }
@@ -43,7 +41,7 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
   
-  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:13], dllname= "gene_circuit", initfunc = "initmod", nout = 2,events = list(func="event",time=28) ))  
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta, dllname= "gene_circuit_updatedtest", initfunc = "initmod", nout = 2,events = list(func="event",time=28) ))  
   expressionModel <- trajModel$AdpA
   logLike <- 0
   for (i in 1:length(time)) {
@@ -136,14 +134,15 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 
 initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=1.65, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 6*10^-3,p=5, sigma_adpAchange= 2*10^-2, sigma_bldAchange= 4*10^-2, shape_parameter= 32)
+theta<- c(beta_AdpA= 90, k1_AdpA= 178, k2_AdpA= 150,  sigma_AdpA=1*10^-2, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 6*10^-2,p=5, sigma_adpAchange= 3*10^-2, sigma_bldAchange= 4*10^-1)
 
 # Running the MCMC algorithm to vary the parameters R0 and D:
 mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                     initTheta = theta, # intial parameter guess
-                    proposalSD = c(5*10^-1, 10^-1, 5*10^-1, 5*10^-1, 5*10^-4, 5*10^-3, 2*10^-4, 4*10^-1, 5*10^-1, 3*10^-4,5*10^-2, 3*10^-3,5*10^-3,2*10^-3, 3*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
-                    numIterations = 250000) # number of iterations
-trace <- matrix(mcmcTrace, ncol = 14, byrow = T)
+                    proposalSD = c(5*10^-1, 5*10^-1, 5*10^-1, 2*10^-3,  5*10^-1, 5*10^-1, 3*10^-4, 7*10^-2, 1*10^-3, 9*10^-2), # standard deviations of # parameters for Gaussian proposal distribution
+                    numIterations = 600000) # number of iterations
+
+trace <- matrix(mcmcTrace, ncol = 10, byrow = T)
 
 library(coda)
 trace <- mcmc(trace)
