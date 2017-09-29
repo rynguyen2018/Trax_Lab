@@ -1,12 +1,88 @@
 library(deSolve)
 library(ggplot2)
-setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+#setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
 #setwd("/Users/Ryan/Desktop/gitcode/Trax_Lab/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
-#dyn.load("gene_circuit.dll")
-dyn.load("gene_circuit.so")
+dyn.load("gene_circuit.dll")
+#dyn.load("gene_circuit.so")
 adpAExpression <- points$Concentration
 ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
+
+
+##
+## post-10-mclapply.hack.R
+##
+## Nathan VanHoudnos
+## nathanvan AT northwestern FULL STOP edu
+## July 14, 2014
+## Last Edit:  August 26, 2014
+##
+## A script to implement a hackish version of
+## parallel:mclapply() on Windows machines.
+## On Linux or Mac, the script has no effect
+## beyond loading the parallel library.
+
+require(parallel)
+
+## Define the hack
+mclapply.hack <- function(..., mc.cores=NULL) {
+  ## Create a cluster
+  if( is.null(mc.cores) ) {
+    size.of.list <- length(list(...)[[1]])
+    mc.cores <- min(size.of.list, detectCores())
+  }
+  ## N.B. setting outfile to blank redirects output to
+  ##      the master console, as is the default with
+  ##      mclapply() on Linux / Mac
+  cl <- makeCluster( mc.cores, outfile="" )
+  
+  ## Find out the names of the loaded packages
+  loaded.package.names <- c(
+    ## Base packages
+    sessionInfo()$basePkgs,
+    ## Additional packages
+    names( sessionInfo()$otherPkgs ))
+  
+  tryCatch( {
+    
+    ## Copy over all of the objects within scope to
+    ## all clusters.
+    this.env <- environment()
+    while( identical( this.env, globalenv() ) == FALSE ) {
+      clusterExport(cl,
+                    ls(all.names=TRUE, env=this.env),
+                    envir=this.env)
+      this.env <- parent.env(environment())
+    }
+    clusterExport(cl,
+                  ls(all.names=TRUE, env=globalenv()),
+                  envir=globalenv())
+    
+    ## Load the libraries on all the clusters
+    ## N.B. length(cl) returns the number of clusters
+    parLapply( cl, 1:length(cl), function(xx){
+      lapply(loaded.package.names, function(yy) {
+        require(yy , character.only=TRUE)})
+    })
+    
+    ## Run the lapply in parallel
+    return( parLapply( cl, ...) )
+  }, finally = {
+    ## Stop the cluster
+    stopCluster(cl)
+  })
+}
+
+## If the OS is Windows, set mclapply to the
+## the hackish version. Otherwise, leave the
+## definition alone.
+mclapply <- switch( Sys.info()[['sysname']],
+                    Windows = {mclapply.hack},
+                    Linux   = {mclapply},
+                    Darwin  = {mclapply})
+
+## end post-10-mclapply.hack.R
 
 #I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
@@ -42,7 +118,6 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
-    
     trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:13], dllname= "gene_circuit", initfunc = "initmod", nout = 2,events = list(func="event",time=28) ))
     expressionModel <- trajModel$AdpA
     logLike <- 0
@@ -90,7 +165,8 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
         
         # Draw a new theta from a Gaussian proposal distribution and
         # assign this to a variable called thetaProposed.
-        thetaProposed <- rnorm(n= length(thetaCurrent), mean= thetaCurrent, sd=proposalSD)
+        thetaProposed <- round(rnorm(n= length(thetaCurrent), mean= thetaCurrent, sd=proposalSD),5)
+        #print(thetaProposed)
         # Assign names to the thetaProposed vector.
         names(thetaProposed) <- names(thetaCurrent)
         
@@ -136,16 +212,16 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 
 initState<- c(AdpA= 0.00001, BldA=0.000015)
 
-theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 1/130,p= 5, sigma_adpAchange= 2*10^-4, sigma_bldAchange= 4*10^-4, shape_parameter= 32)
+theta<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 3.5*10^-3,p= 5, sigma_adpAchange= 2*10^-2, sigma_bldAchange= 4*10^-2, shape_parameter= 32)
 
-# Running the MCMC algorithm to vary the parameters R0 and D:
-mcmcTrace <- mcmcMH(posterior = logPosteriorMH, # posterior distribution
+
+#cl <- parallel::makeCluster(spec=detectCores()-10,type="PSOCK")
+#parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
+
+
+#clusterExport(cl, list("adpAExpression", "ODEtime", "initState", "logPrior", "theta", "logPosteriorMH", "logPosterior", "pointLogLike", "trajLogLike", "mcmcMH"))
+
+mcmcTrace <-mcmcMH(posterior = logPosteriorMH, # posterior distribution
 initTheta = theta, # intial parameter guess
-proposalSD = c(4*10^-3, 4*10^-3, 5*10^-3, 5*10^-3, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-3, 5*10^-3, 10^-3,5*10^-3, 7*10^-4,5*10^-6,2*10^-6, 2*10^-5), # standard deviations of # parameters for Gaussian proposal distribution
-numIterations = 200000) # number of iterations
-trace <- matrix(mcmcTrace, ncol = 14, byrow = T)
-
-library(coda)
-trace <- mcmc(trace)
-plot(trace)
-summary(trace)
+proposalSD = c(4*10^-1, 4*10^-1, 5*10^-1, 5*10^-1, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-1, 5*10^-1, 5*10^-4,5*10^-1, 7*10^-4,5*10^-3,2*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+numIterations = 350000) # number of iterations
