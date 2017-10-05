@@ -7,7 +7,7 @@ setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
 #dyn.load("gene_circuit.dll")
 dyn.load("gene_circuit.so")
-adpAExpression <- points$Concentration
+adpAExpression <- points$Concentration_micromolar
 ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
 #I love computational things because it makes me sad when I do stupid things. Swag
@@ -129,14 +129,15 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     # Add the current theta to the vector of samples.
     samples <- c(samples, thetaCurrent)
     
-    cat("iteration:", i, "chain:", thetaCurrent,
-        "acceptance rate:", accepted / i, "\n")
+    #cat("iteration:", i, "chain:", thetaCurrent,
+    #    "acceptance rate:", accepted / i, "\n")
   }
+  print(accepted/numIterations)
   return(samples)
 }
 
 
-initState<- c(AdpA= 0.00001, BldA=0.000015)
+initState<- c(AdpA= 1, BldA=1.5) #initial concentration in micromolar
 
 theta_vec <- list()
 
@@ -144,9 +145,9 @@ theta1<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA
 theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
 
 
-no_cores<- detectCores()-1
+no_cores<- detectCores()-2
 for(i in 1:no_cores){
-  theta<- c(beta_AdpA= runif(1, min= 10, max= 5000), gamma_AdpA=runif(1, min= 10, max= 5000), k1_AdpA= runif(1, min= 10, max= 6000), k2_AdpA= runif(1, min= 10, max= 6000),  sigma_AdpA=runif(1, min= 10^-7, max= 1), n1=runif(1, min= 0, max= 20), n2=runif(1, min= 0, max= 20), gamma_BldA= runif(1, min= 10, max= 10000), k1_BldA=runif(1, min= 10, max= 9000), sigma_BldA= runif(1, min= 10^-7, max= 1),p= runif(1, min= 0, max= 20), sigma_adpAchange= runif(1, min= 10^-7, max= 1), sigma_bldAchange= runif(1, min= 10^-7, max= 1), shape_parameter= 32)
+  theta<- c(beta_AdpA= runif(1, min= 20, max= 100), gamma_AdpA=runif(1, min= 20, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10),  sigma_AdpA=runif(1, min= 10^-7, max= 1), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10), sigma_BldA= runif(1, min= 10^-7, max= 1),p= runif(1, min= -2, max= 7), sigma_adpAchange= runif(1, min= 10^-7, max= 1), sigma_bldAchange= runif(1, min= 10^-7, max= 1), shape_parameter= 32)
   theta_vec<- c(theta_vec, list(theta))
 }
 
@@ -154,15 +155,14 @@ print(theta_vec)
 cl<-makeCluster(no_cores)
 parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
 
-mcmcTrace<- mclapply(X= theta_vec[1:7], FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
+mcmcTrace<- mclapply(X= theta_vec[1:no_cores], FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
                                                              initTheta = theta, # intial parameter guess
-                                                             proposalSD = c(4*10^-1, 4*10^-1, 5*10^-1, 5*10^-1, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-1, 5*10^-1, 5*10^-4,5*10^-1, 7*10^-4,5*10^-3,2*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
-                                                             numIterations = 500000)}, mc.cores=7) # number of iterations 
+                                                             proposalSD = c(4*10^-1, 4*10^-1, 5*10^-2, 5*10^-2, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-1, 5*10^-1, 5*10^-4,5*10^-1, 7*10^-4,5*10^-3,2*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+                                                             numIterations = 300000)}, mc.cores=6) # number of iterations 
 
 
 stopCluster(cl)
 rm(cl)
-
 
 #trace <- matrix(mcmcTrace[[2]], ncol = 14, byrow = T)
 
