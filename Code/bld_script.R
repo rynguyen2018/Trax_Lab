@@ -1,14 +1,14 @@
 library(deSolve)
 library(ggplot2)
 library(parallel)
-setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+#setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
 #setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
-#setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
+setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
 #dyn.load("gene_circuit.dll")
 dyn.load("gene_circuit.so")
 adpAExpression <- points$Concentration_micromolar
-ODEtime<- points$Time#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
+ODEtime<- points$Time[8:length(points$Time)]- points$Time[8]#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
 #I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
@@ -35,6 +35,9 @@ logPrior <- function(theta) {
 ###Likelihood function for a single data point
 pointLogLike <- function(i, expressionData, expressionModel, theta){
   #Fluorescence is observed through a negative binomial process with non integer counts. Thus, you first sample from a gamma distribution and then use the result as the mean for a poisson process
+  if(i==0){
+    i<-i+1
+  }
   nbLike <-dgamma(x= expressionData[i], shape=theta[["shape_parameter"]], scale= expressionModel[i]/theta[["shape_parameter"]] ,log=TRUE)
   if(is.na(nbLike)){
     return(0)
@@ -44,12 +47,14 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
-  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:13], dllname= "gene_circuit", initfunc = "initmod", nout = 2,events = list(func="event",time=28) ))
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:13], dllname= "gene_circuit", initfunc = "initmod", nout = 2,events = list(func="event",time=46800) ))
+  
   expressionModel <- trajModel$AdpA
   logLike <- 0
-  for (i in 1:length(time)) {
-    logLike <- logLike + pointLogLike(time[i], expressionData , expressionModel, theta )
+  for (i in time) {
+      logLike <- logLike + pointLogLike(i/1800, expressionData , expressionModel, theta )
   }
+  
   return(logLike)
 }
 
@@ -62,6 +67,7 @@ logPosterior <- function(time, expressionData, theta, initState) {
   ## incidence data (IncData), and the initial values of the state
   ## variables (initState).
   logLike <- trajLogLike(time, expressionData, theta, initState)
+  
   logPosterior <- logPrior + logLike
   return(logPosterior)
 }
@@ -70,7 +76,7 @@ logPosterior <- function(time, expressionData, theta, initState) {
 logPosteriorMH <- function(MHparams) {
   return(logPosterior(time= ODEtime, expressionData= adpAExpression,
                       theta= c(MHparams),
-                      initState=c(AdpA= 0.00001, BldA=0.000015)))
+                      initState=c(AdpA= 1, BldA=1.5)))
   
 }
 
@@ -91,7 +97,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     
     # Draw a new theta from a Gaussian proposal distribution and
     # assign this to a variable called thetaProposed.
-    thetaProposed <- round(rnorm(n= length(thetaCurrent), mean= thetaCurrent, sd=proposalSD),5)
+    thetaProposed <- rnorm(n= length(thetaCurrent), mean= thetaCurrent, sd=proposalSD)
     #print(thetaProposed)
     # Assign names to the thetaProposed vector.
     names(thetaProposed) <- names(thetaCurrent)
@@ -112,7 +118,6 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     # determine if thetaProposed will be accepted.
     
     if (randNum< exp(logAcceptance)) {
-      
       # If accepted, change the current value of theta to the
       # proposed value of theta.
       thetaCurrent <- thetaProposed
@@ -123,16 +128,15 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
       
       # And update number of accepted proposals.
       accepted <- accepted+1
-      
     }
     
     # Add the current theta to the vector of samples.
     samples <- c(samples, thetaCurrent)
     
-    #cat("iteration:", i, "chain:", thetaCurrent,
-    #    "acceptance rate:", accepted / i, "\n")
+    cat("iteration:", i, "chain:", thetaCurrent,
+        "acceptance rate:", accepted /i, "\n")
   }
-  print(accepted/numIterations)
+  #print(accepted/numIterations)
   return(samples)
 }
 
@@ -142,33 +146,37 @@ initState<- c(AdpA= 1, BldA=1.5) #initial concentration in micromolar
 theta_vec <- list()
 
 theta1<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 3.5*10^-3,p= 5, sigma_adpAchange= 2*10^-2, sigma_bldAchange= 4*10^-2, shape_parameter= 32)
-theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
+#theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
 
 
-no_cores<- detectCores()-2
+no_cores<- detectCores()-3
 for(i in 1:no_cores){
-  theta<- c(beta_AdpA= runif(1, min= 20, max= 100), gamma_AdpA=runif(1, min= 20, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10),  sigma_AdpA=runif(1, min= 10^-7, max= 1), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10), sigma_BldA= runif(1, min= 10^-7, max= 1),p= runif(1, min= -2, max= 7), sigma_adpAchange= runif(1, min= 10^-7, max= 1), sigma_bldAchange= runif(1, min= 10^-7, max= 1), shape_parameter= 32)
-  theta_vec<- c(theta_vec, list(theta))
+  theta_vec<- c(theta_vec, list(theta1))
 }
 
 print(theta_vec)
 cl<-makeCluster(no_cores)
 parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
 
-mcmcTrace<- mclapply(X= theta_vec[1:no_cores], FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
+mcmcTrace<- mclapply(X= theta_vec, FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
                                                              initTheta = theta, # intial parameter guess
-                                                             proposalSD = c(4*10^-1, 4*10^-1, 5*10^-2, 5*10^-2, 5*10^-4, 6*10^-3, 2*10^-2, 4*10^-1, 5*10^-1, 5*10^-4,5*10^-1, 7*10^-4,5*10^-3,2*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
-                                                             numIterations = 300000)}, mc.cores=6) # number of iterations 
+                                                             proposalSD = c(4*10^-2, 4*10^-2, 5*10^-2, 3*10^-2, 2*10^-4, 6*10^-2, 3*10^-2, 4*10^-2, 5*10^-2, 5*10^-4,5*10^-2, 5*10^-3,5*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+                                                             numIterations = 2000)}) # number of iterations 
 
 
 stopCluster(cl)
 rm(cl)
 
-#trace <- matrix(mcmcTrace[[2]], ncol = 14, byrow = T)
+#library(coda)
+#trace <- matrix(mcmcTrace[[1]], ncol = 14, byrow = T)
 
-saveRDS(object=mcmcTrace,file="mcmc_out.rds")
+#saveRDS(object=mcmcTrace,file="mcmc_out.rds")
 
-
+#traceBurn <- trace[-(1:1000),]
+#traceBurn <- mcmc(traceBurn)
+#plot(traceBurn)
+#summary(traceBurn)
+#autocorr.plot(traceBurn)
 #library(coda)
 #trace <- mcmc(trace)
 #plot(trace)
