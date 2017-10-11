@@ -149,7 +149,7 @@ theta_vec <- list()
 #theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
 
 
-no_cores<- detectCores()-3
+no_cores<- detectCores()-2
 for(i in 1:no_cores){
   theta<- c(beta_AdpA= runif(1, min= 40, max= 100), gamma_AdpA=runif(1, min= 40, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10),  sigma_AdpA=runif(1, min= 10^-7, max= 1), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10), sigma_BldA= runif(1, min= 10^-7, max= 1),p= runif(1, min= -2, max= 7), sigma_adpAchange= runif(1, min= 10^-7, max= 1), sigma_bldAchange= runif(1, min= 10^-7, max= 1), shape_parameter= 32)
   theta_vec<- c(theta_vec, list(theta))
@@ -168,10 +168,13 @@ mcmcTrace<- mclapply(X= theta_vec, FUN=function(theta){mcmcMH(posterior = logPos
 stopCluster(cl)
 rm(cl)
 
-#library(coda)
-#trace <- matrix(mcmcTrace[[1]], ncol = 14, byrow = T)
+library(coda)
+trace <- matrix(mcmcTrace[[2]], ncol = 14, byrow = T)
 
-#saveRDS(object=mcmcTrace,file="mcmc_out.rds")
+saveRDS(object=mcmcTrace,file="mcmc_out.rds")
+trace<-mcmc(trace)
+plot(trace)
+summary(trace)
 
 #traceBurn <- trace[-(1:1000),]
 #traceBurn <- mcmc(traceBurn)
