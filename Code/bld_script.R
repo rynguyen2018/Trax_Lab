@@ -12,17 +12,30 @@ ODEtime<- points$Time[8:length(points$Time)]- points$Time[8]#seq(from =1, to=poi
 
 #I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
-  logPriorbeta_AdpA <- dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
+  reject_value<- -99999999
+
+  logPriorbeta_AdpA <- max(reject_value, dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE))
   
   logPriorgamma_AdpA <- dunif(theta[["gamma_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
-  logPriork1_AdpA <- dnorm(log(abs(theta[["k1_AdpA"]])), mean= 4.605, sd = 2.7, log = TRUE)
-  logPriork2_AdpA <- dnorm(log(abs(theta[["k2_AdpA"]])), mean = 4.605, sd = 2.7, log = TRUE)
+  if(theta[["k1_AdpA"]]<1){
+    logPriork1_AdpA<- reject_value
+  }else{
+    logPriork1_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+  }
+  if(theta[["k2_AdpA"]]<1){
+    logPriork2_AdpA<- reject_value
+  }else{
+    logPriork2_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+  }
   logPriorsigma_AdpA <- dunif(theta[["sigma_AdpA"]], min = 10^-7, max = 1, log = TRUE)
   logPriorn1 <-  dunif(theta[["n1"]], min = -20, max = 20, log = TRUE)
   logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
-  
   logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
-  logPriork1_BldA <- dnorm(log(abs(theta[["k1_BldA"]])), mean = 4.605, sd = 2.7, log = TRUE)
+  if(theta[["k1_BldA"]]<1){
+    logPriork1_BldA<- reject_value
+  }else{
+    logPriork1_BldA <- dnorm(log(theta[["k1_BldA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+  }
   logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
   logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
   logPriorsigma_AdpA_change <- dunif(theta[["sigma_adpAchange"]], min= 10^-7, max=1, log= TRUE)
