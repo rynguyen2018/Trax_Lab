@@ -1,14 +1,14 @@
 library(deSolve)
 library(ggplot2)
 library(parallel)
-#setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
 #setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
-setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
+#setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
 #dyn.load("gene_circuit.dll")
 dyn.load("gene_circuit.so")
-adpAExpression <- points$Concentration_micromolar
-ODEtime<- points$Time[8:length(points$Time)]- points$Time[8]#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
+adpAExpression <- points$Concentration_micromolar[0:35]
+ODEtime<- points$Time[0:35]#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
 
 #I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
@@ -17,32 +17,28 @@ logPrior <- function(theta) {
   logPriorbeta_AdpA <- max(reject_value, dunif(theta[["beta_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE))
   
   logPriorgamma_AdpA <- dunif(theta[["gamma_AdpA"]], min = 1*10^-7, max = 10^5, log = TRUE)
-  if(theta[["k1_AdpA"]]<1){
+  if(theta[["k1_AdpA"]]<0.00005){
     logPriork1_AdpA<- reject_value
   }else{
     logPriork1_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
-  if(theta[["k2_AdpA"]]<1){
+  if(theta[["k2_AdpA"]]<0.000005){
     logPriork2_AdpA<- reject_value
   }else{
     logPriork2_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
-  logPriorsigma_AdpA <- dunif(theta[["sigma_AdpA"]], min = 10^-7, max = 1, log = TRUE)
   logPriorn1 <-  dunif(theta[["n1"]], min = -20, max = 20, log = TRUE)
   logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
   logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
-  if(theta[["k1_BldA"]]<1){
+  if(theta[["k1_BldA"]]<0.000005){
     logPriork1_BldA<- reject_value
   }else{
     logPriork1_BldA <- dnorm(log(theta[["k1_BldA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
-  logPriorsigma_BldA <- dunif(theta[["sigma_BldA"]],  min = 10^-7, max = 1, log = TRUE)
   logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
-  logPriorsigma_AdpA_change <- dunif(theta[["sigma_adpAchange"]], min= 10^-7, max=1, log= TRUE)
-  logPrior_bldA_change <- dunif(theta[["sigma_bldAchange"]], min= 10^-7, max=1, log= TRUE)
   logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 1000, log = TRUE)
   return(logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA
-         +logPriorsigma_AdpA+logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +  logPriorsigma_BldA + logPriorp+logPriorsigma_AdpA_change+logPrior_bldA_change +logpriorshape_parameter)
+         +logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +   logPriorp +logpriorshape_parameter)
 }
 
 ###Likelihood function for a single data point
@@ -60,7 +56,7 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
-  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:13], dllname= "gene_circuit", initfunc = "initmod", nout = 2,events = list(func="event",time=46800) ))
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:9], dllname= "gene_circuit", initfunc = "initmod", nout = 2))
   
   expressionModel <- trajModel$AdpA
   logLike <- 0
@@ -164,7 +160,7 @@ theta_vec <- list()
 
 no_cores<- detectCores()-2
 for(i in 1:no_cores){
-  theta<- c(beta_AdpA= runif(1, min= 40, max= 100), gamma_AdpA=runif(1, min= 40, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10),  sigma_AdpA=runif(1, min= 10^-7, max= 1), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10), sigma_BldA= runif(1, min= 10^-7, max= 1),p= runif(1, min= -2, max= 7), sigma_adpAchange= runif(1, min= 10^-7, max= 1), sigma_bldAchange= runif(1, min= 10^-7, max= 1), shape_parameter= 32)
+  theta<- c(beta_AdpA= runif(1, min= 40, max= 100), gamma_AdpA=runif(1, min= 40, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10),p= runif(1, min= -2, max= 7), shape_parameter= 32)
   theta_vec<- c(theta_vec, list(theta))
 }
 
@@ -174,20 +170,17 @@ parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
 
 mcmcTrace<- mclapply(X= theta_vec, FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
                                                              initTheta = theta, # intial parameter guess
-                                                             proposalSD = c(4*10^-2, 4*10^-2, 5*10^-2, 3*10^-2, 6*10^-5, 6*10^-2, 3*10^-2, 4*10^-2, 5*10^-2, 5*10^-4,5*10^-2, 5*10^-3,5*10^-3, 2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
-                                                             numIterations = 2000)}) # number of iterations 
+                                                             proposalSD = c(4*10^-2, 4*10^-2, 5*10^-2, 3*10^-2, 6*10^-2, 3*10^-2, 4*10^-2, 5*10^-2, 5*10^-2,2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+                                                             numIterations = 500000)}) # number of iterations 
 
 
 stopCluster(cl)
 rm(cl)
 
 library(coda)
-trace <- matrix(mcmcTrace[[2]], ncol = 14, byrow = T)
 
-saveRDS(object=mcmcTrace,file="mcmc_out.rds")
-trace<-mcmc(trace)
-plot(trace)
-summary(trace)
+saveRDS(object=mcmcTrace,file="mcmc_out_10_23_17.rds")
+
 
 #traceBurn <- trace[-(1:1000),]
 #traceBurn <- mcmc(traceBurn)
