@@ -4,7 +4,7 @@ import numpy as np
 ###nucleotide align
 num_genes=0
 seq_array= []
-with open("test_seq.fa") as gen_seq:
+with open("ntseq.fa") as gen_seq:
     for line in gen_seq:
         if ">" in line:
             num_genes+=1 
@@ -21,27 +21,25 @@ with open("sur_sequence.fa") as sur_seq:
 
 print("Sequences ready for analysis")
 sur_gene_number= 1
-sur_score_dict={}
+sur_score_list=[]
 for sur_gene in sur_seq_array:
     sur_gene_name= "Sur Gene " + str(sur_gene_number)
     sur_gene_alignment_score=[]
-    print(sur_gene_alignment_score)
     seq_gene_nums=[]
     for i in range(0, len(seq_array)):
         #print(sur_gene)
         alignment_score1 = pairwise2.align.localxx(sur_gene, seq_array[i], score_only=True)
+        print("First alignment done")
         alignment_score2 = pairwise2.align.localxx(seq_array[i], sur_gene,score_only=True)
+        print("Second alignment done")
         alignment_score= max(alignment_score1, alignment_score2)
         sur_gene_alignment_score.append(alignment_score)
         seq_gene_nums.append(str(i))
+        print("Alignment ", str(i), " is done.")
         #input("...")
     print(sur_gene_alignment_score)
     print("Now finding best matches for ", sur_gene_name, "...")
     #print(list(zip(sur_gene_alignment_score,seq_gene_nums))[45])
-    print(sorted(zip(sur_gene_alignment_score, seq_gene_nums), reverse=True))
+    sur_score_list.append(sorted(zip(sur_gene_alignment_score, seq_gene_nums), reverse=True)[:10])
     print("Onto next gene ....s")
-    sur_gene_alignment_score=None
-    input("...")
     sur_gene_number+=1
-
-
