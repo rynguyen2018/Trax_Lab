@@ -1,7 +1,7 @@
 library(deSolve)
 library(ggplot2)
 library(parallel)
-setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+#setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
 #setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
 #setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
@@ -25,7 +25,7 @@ logPrior <- function(theta) {
   if(theta[["k2_AdpA"]]<0.000005){
     logPriork2_AdpA<- reject_value
   }else{
-    logPriork2_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+    logPriork2_AdpA <- dnorm(log(theta[["k2_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
   logPriorn1 <-  dunif(theta[["n1"]], min = -20, max = 20, log = TRUE)
   logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
@@ -158,9 +158,9 @@ theta_vec <- list()
 #theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
 
 
-no_cores<- detectCores()-2
+no_cores<- 10
 for(i in 1:no_cores){
-  theta<- c(beta_AdpA= runif(1, min= 40, max= 100), gamma_AdpA=runif(1, min= 40, max= 100), k1_AdpA= runif(1, min= 9*10^-2, max= 10), k2_AdpA= runif(1, min= 9*10^-2, max= 10), n1=runif(1, min=-3, max= 4), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 9*10^-2, max= 10),p= runif(1, min= -2, max= 7), shape_parameter= 32)
+  theta<- c(beta_AdpA= runif(1, min= 40, max= 100), gamma_AdpA=runif(1, min= 40, max= 100), k1_AdpA= runif(1, min= 5*10^-1, max= 10), k2_AdpA= runif(1, min= 5*10^-1, max= 10), n1=runif(1, min=1, max= 2), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 0.5, max= 10),p= runif(1, min= -2, max= 7), shape_parameter= 0.4)
   theta_vec<- c(theta_vec, list(theta))
 }
 
@@ -170,7 +170,7 @@ parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
 
 mcmcTrace<- mclapply(X= theta_vec, FUN=function(theta){mcmcMH(posterior = logPosteriorMH, # posterior distribution
                                                              initTheta = theta, # intial parameter guess
-                                                             proposalSD = c(4*10^-2, 4*10^-2, 5*10^-2, 3*10^-2, 6*10^-2, 3*10^-2, 4*10^-2, 5*10^-2, 5*10^-2,2*10^-1), # standard deviations of # parameters for Gaussian proposal distribution
+                                                             proposalSD = c(8*10^-2, 4*10^-2, 5*10^-3, 5*10^-3, 6*10^-3, 3*10^-3, 4*10^-2, 5*10^-2, 5*10^-2,5*10^-3), # standard deviations of # parameters for Gaussian proposal distribution
                                                              numIterations = 500000)}) # number of iterations 
 
 
@@ -179,7 +179,7 @@ rm(cl)
 
 library(coda)
 
-saveRDS(object=mcmcTrace,file="mcmc_out_10_23_17.rds")
+saveRDS(object=mcmcTrace,file="mcmc_out_11_13_17.rds")
 
 
 #traceBurn <- trace[-(1:1000),]
