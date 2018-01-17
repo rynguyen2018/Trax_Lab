@@ -1,14 +1,14 @@
 library(deSolve)
 library(ggplot2)
-library(parallel)
-setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
-#setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
+
+#setwd("/Users/Echo_Base/Desktop/Trax_code/Code")
+setwd("C:/Users/Death Star/Desktop/Trax_Lab/Code")
 #setwd("/Users/ryannguyen/Desktop/Trax_code/Code")
 points<- read.csv("adpA-experimental_rev2.csv", header=TRUE)
-#dyn.load("gene_circuit.dll")
-dyn.load("gene_circuit.so")
+dyn.load("gene_circuit.dll")
+#dyn.load("gene_circuit.so")
 adpAExpression <- points$Concentration_micromolar[0:35]
-ODEtime<- points$Time[0:35]#seq(from =1, to=points$Time[length(points$Time)], by=0.0005)
+ODEtime<- points$Time[0:35]#seq(from =1, to=points$Time[35], by=0.5)#
 
 #I love computational things because it makes me sad when I do stupid things. Swag
 logPrior <- function(theta) {
@@ -25,21 +25,65 @@ logPrior <- function(theta) {
   if(theta[["k2_AdpA"]]<0.000005){
     logPriork2_AdpA<- reject_value
   }else{
-    logPriork2_AdpA <- dnorm(log(theta[["k1_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
+    logPriork2_AdpA <- dnorm(log(theta[["k2_AdpA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
   logPriorn1 <-  dunif(theta[["n1"]], min = 0, max = 20, log = TRUE)
   logPriorn2 <- dunif(theta[["n2"]], min = -20, max = 20, log = TRUE)
-  logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-7, max = 1*10^5, log = TRUE)
+  if(theta[["eta1_AdpA"]]<0.000005){
+    logPrioreta1_AdpA<- reject_value
+  }else{
+    logPrioreta1_AdpA <- dunif(theta[["eta1_AdpA"]], min= 10^-7, max = 10^-1, log = TRUE)
+  }
+  
+  
+  logPriorgamma_BldA <- dunif(theta[["gamma_BldA"]], min = 1*10^-3, max = 100, log = TRUE)
+  #print(logPriorgamma_BldA)
   if(theta[["k1_BldA"]]<0.000005){
     logPriork1_BldA<- reject_value
   }else{
     logPriork1_BldA <- dnorm(log(theta[["k1_BldA"]]), mean= 4.605, sd = 2.7, log = TRUE)
   }
   logPriorp <- dunif(theta[["p"]], min = -20, max = 20, log = TRUE)
+  
+  if(theta[["omega"]]<0.000005){
+    logPrioromega<- reject_value
+  }else{
+    logPrioromega <- dunif(theta[["omega"]], min= 1, max = 100, log = TRUE)
+  }
+
+  if(theta[["beta_AbsB"]]<0.000005){
+    logPriorbeta_AbsB<- reject_value
+  }else{
+    logPriorbeta_AbsB <- dunif(theta[["beta_AbsB"]], min= 1, max = 100, log = TRUE)
+  }
+
+  if(theta[["k1_AbsB"]]<0.000005){
+    logPriork1_AbsB<- reject_value
+  }else{
+    logPriork1_AbsB <- dnorm(log(theta[["k1_AbsB"]]), mean= 4.605, sd = 2.7, log = TRUE)
+  }
+  #print(logPriork1_AbsB)
+  if(theta[["eta1_AbsB"]]<0.000005){
+    logPrioreta1_AbsB<- reject_value
+  }else{
+    logPrioreta1_AbsB <- dunif(theta[["eta1_AbsB"]], min= 10^-7, max = 10^6, log = TRUE)
+  }
+  
+  logPriorn4 <- dunif(theta[["n4"]], min = -20, max = 20, log = TRUE)
+  
+  
+  
+  
   logpriorshape_parameter<- dunif(theta[["shape_parameter"]], min = 0.1, max = 1000, log = TRUE)
-  return(logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA
-         +logPriorn1+logPriorn2 +logPriorgamma_BldA+logPriork1_BldA +   logPriorp +logpriorshape_parameter)
-}
+  
+  
+  
+  
+  
+  a <- (logPriorbeta_AdpA+ logPriorgamma_AdpA + logPriork1_AdpA +logPriork2_AdpA + logPriorn1+logPriorn2 + logPrioreta1_AdpA + logPriorgamma_BldA+logPriork1_BldA +   logPriorp +logPrioromega + logPriorbeta_AbsB +logPriork1_AbsB + logPrioreta1_AbsB + logPriorn4+logpriorshape_parameter)
+  #print(a)
+  return(a)
+  }
 
 ###Likelihood function for a single data point
 pointLogLike <- function(i, expressionData, expressionModel, theta){
@@ -48,6 +92,7 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
     i<-i+1
   }
   nbLike <-dgamma(x= expressionData[i], shape=theta[["shape_parameter"]], scale= expressionModel[i]/theta[["shape_parameter"]] ,log=TRUE)
+  #print(nbLike)
   if(is.na(nbLike)){
     return(0)
   }
@@ -56,9 +101,10 @@ pointLogLike <- function(i, expressionData, expressionModel, theta){
 
 ## Likelihood function for all data points:
 trajLogLike <- function(time, expressionData, theta, initState) {
-  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[0:9], dllname= "gene_circuit", initfunc = "initmod", nout = 2))
-  
+  trajModel <- data.frame(ode(y=initState, times=time, func="derivs",parms=theta[1:15], dllname= "gene_circuit", initfunc = "initmod", nout = 3))
+  #print(trajModel)
   expressionModel <- trajModel$AdpA
+  #print(expressionModel)
   logLike <- 0
   for (i in time) {
     logLike <- logLike + pointLogLike(i/1800, expressionData , expressionModel, theta )
@@ -85,7 +131,7 @@ logPosterior <- function(time, expressionData, theta, initState) {
 logPosteriorMH <- function(MHparams) {
   return(logPosterior(time= ODEtime, expressionData= adpAExpression,
                       theta= c(MHparams),
-                      initState=c(AdpA= 1, BldA=1.5)))
+                      initState=c(AdpA= 1, BldA=1.5, AbsB=3)))
   
 }
 
@@ -94,6 +140,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
   
   # Evaluate the function "posterior" at "initTheta", and assign to a
   # variable called posteriorThetaCurrent.
+  initTheta <- round(initTheta, 3)
   posteriorThetaCurrent <- logPosteriorMH(initTheta)
   # Initialise variables to store the current value of theta, the
   # vector of sample values, and the number of accepted proposals.
@@ -107,6 +154,7 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
     # Draw a new theta from a Gaussian proposal distribution and
     # assign this to a variable called thetaProposed.
     thetaProposed <- rnorm(n= length(thetaCurrent), mean= thetaCurrent, sd=proposalSD)
+    print(thetaProposed)
     #print(thetaProposed)
     # Assign names to the thetaProposed vector.
     names(thetaProposed) <- names(thetaCurrent)
@@ -150,34 +198,32 @@ mcmcMH <- function(posterior, initTheta, proposalSD, numIterations) {
 }
 
 
-initState<- c(AdpA= 1, BldA=1.5) #initial concentration in micromolar
-
-theta_vec <- list()
-
-#theta1<- c(beta_AdpA= 90, gamma_AdpA=320, k1_AdpA= 178, k2_AdpA= 90,  sigma_AdpA=3.5*10^-3, n1=1.2, n2=5, gamma_BldA= 203, k1_BldA=200, sigma_BldA= 3.5*10^-3,p= 5, sigma_adpAchange= 2*10^-2, sigma_bldAchange= 4*10^-2, shape_parameter= 32)
-#theta2<- c(beta_AdpA= 100, gamma_AdpA=200, k1_AdpA= 100, k2_AdpA= 90,  sigma_AdpA=5*10^-3, n1=1.2, n2=1.68, gamma_BldA= 200, k1_BldA=200, sigma_BldA= 5*10^-2,p= 10, sigma_adpAchange= 4*10^-2, sigma_bldAchange= 0.3, shape_parameter= 3)
+initState<- c(AdpA= 1, BldA=1.5, AbsB =2) #initial concentration in micromolar
 
 
-#no_cores<- 1#detectCores()-2
-#for(i in 1:no_cores){
-theta<- c(beta_AdpA= 72, gamma_AdpA=62, k1_AdpA= runif(1, min= 5*10^-1, max= 10), k2_AdpA= runif(1, min= 5*10^-1, max= 10), n1=runif(1, min=1, max= 8), n2=runif(1, min= -4, max= 5), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 0.5, max= 10),p= runif(1, min= -2, max= 7), shape_parameter= 0.4)
-#  theta_vec<- c(theta_vec, list(theta))
-#}
+theta<- c(beta_AdpA= 40, gamma_AdpA=50, k1_AdpA= runif(1, min= 5*10^-1, max= 10), 
+          k2_AdpA= runif(1, min= 5*10^-1, max= 10), n1=runif(1, min=1, max= 8), n2=runif(1, min= -4, max= 5), 
+          eta1_AdpA = runif(1, min =10^-2, max=10^-1), gamma_BldA= runif(1, min= 20, max= 100), k1_BldA=runif(1, min= 0.5, max= 10),
+          p= runif(1, min= -2, max= 7), omega = runif(1, min=2, max=30), beta_AbsB = runif(1, min = 20, max =80), 
+          k1_AbsB= runif(1, min= 5*10^-1, max= 10), eta1_AbsB = runif(1, min= 10^-2,10^-1), n4=runif(1, min= -4, max= 5), 
+          shape_parameter= 0.4)
 
-#print(theta_vec)
-#cl<-makeCluster(no_cores)
-#parallel::clusterSetRNGStream(cl=cl,iseed=NULL)
 
 mcmcTrace<- mcmcMH(posterior = logPosteriorMH, # posterior distribution
                    initTheta = theta, # intial parameter guess
-                   proposalSD = c(4*10^-2, 4*10^-2, 5*10^-3, 5*10^-3, 6*10^-2, 3*10^-3, 4*10^-2, 5*10^-2, 5*10^-2,5*10^-3), # standard deviations of # parameters for Gaussian proposal distribution
-                   numIterations = 1000000) # number of iterations 
+                   proposalSD = c(4*10^-2, 4*10^-2, 5*10^-3, 
+                                  5*10^-3, 6*10^-2, 3*10^-3, 
+                                  4*10^-3, 4*10^-2, 5*10^-2, 
+                                  5*10^-2, 3*10^-3, 4*10^-3, 
+                                  6*10^-3, 5*10^-4, 4*10^-3,
+                                  5*10^-3), # standard deviations of # parameters for Gaussian proposal distribution
+                   numIterations = 10) # number of iterations 
 
 
 
-library(coda)
+#library(coda)
 
-saveRDS(object=mcmcTrace,file="mcmc_out_10_30_17_1.rds")
+#saveRDS(object=mcmcTrace,file="mcmc_out_1_17_18_2.rds")
 
 
 #traceBurn <- trace[-(1:1000),]
